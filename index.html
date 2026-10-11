@@ -1,39 +1,450 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Leaflet.js 1.9.4</title>
-    <meta charset="utf-8" />
-    <link 
-        rel="stylesheet" 
-        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    />
-    <style>
-        body {
-            padding: 0;
-            margin: 0;
-        }
-        html, body, #map {
-            height: 100%;
-            width: 100%;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Map Tiles Comparison</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #121212;
+      font-family: system-ui, sans-serif;
+    }
+
+    #map-grid {
+      display: grid;
+      width: 100%;
+      height: 100%;
+      gap: 2px;
+      background: #333;
+    }
+
+    .map-pane {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: #1e1e1e;
+    }
+
+    .empty-pane {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #181818;
+      color: #666;
+      font-size: 16px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    #global-zoom-indicator {
+      position: fixed;
+      bottom: 12px;
+      left: 12px;
+      z-index: 1000;
+      background: rgba(30, 30, 30, 0.85);
+      color: #fff;
+      padding: 6px 10px;
+      font: 12px/1.5 system-ui, sans-serif;
+      border-radius: 4px;
+      border: 1px solid #555;
+      pointer-events: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    #tile-url-dialog {
+      width: min(560px, calc(100% - 40px));
+      box-sizing: border-box;
+      border: 1px solid #444;
+      border-radius: 8px;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #e0e0e0;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+      font: 14px/1.45 system-ui, sans-serif;
+    }
+
+    #tile-url-dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
+
+    #tile-url-dialog h1 { margin: 0 0 8px; font-size: 18px; color: #fff; }
+    #tile-url-dialog p { margin: 0 0 14px; color: #bbb; }
+
+    #tile-url {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0 0 14px;
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #2a2a2a;
+      color: #fff;
+      font: inherit;
+    }
+
+    #provider-checkboxes {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin: 0 0 14px;
+      padding: 12px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #2a2a2a;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    #provider-checkboxes label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: #e0e0e0;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .dialog-actions button {
+      padding: 8px 12px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #333;
+      color: #e0e0e0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .dialog-actions button:hover {
+      background: #444;
+    }
+
+    .dialog-actions button[type="submit"] {
+      color: white;
+      border-color: #1769aa;
+      background: #1769aa;
+    }
+
+    .dialog-actions button[type="submit"]:hover {
+      background: #1f7ec4;
+    }
+
+    .field-label {
+      display: block;
+      margin: 0 0 5px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .hint { color: #aaa; font-size: 12px; }
+  </style>
 </head>
 <body>
-    <div id="map"></div>
+  <div id="map-grid"></div>
+  <div id="global-zoom-indicator">Zoom: 2</div>
 
-    <script
-        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-    </script>
+  <dialog id="tile-url-dialog">
+    <form id="tile-url-form">
+      <h1>Map tile source</h1>
+      <p>Select up to 4 providers for side-by-side comparison or include a custom tile URL.</p>
 
-    <script>
-        var map = L.map('map').setView([51.507200, -0.127600], 9);
-        mapLink = 
-            '<a href="http://openstreetmap.org">OpenStreetMap</a>';
-        L.tileLayer(
-            'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; ' + mapLink + ' Contributors',
-            maxZoom: 18,
-            }).addTo(map);
-    </script>
+      <label class="field-label">Tile providers</label>
+      <div id="provider-checkboxes">
+        <label><input type="checkbox" name="provider" value="openstreetmap" checked> OpenStreetMap (default)</label>
+        <label><input type="checkbox" name="provider" value="google"> Google satellite</label>
+        <label><input type="checkbox" name="provider" value="googleHybrid"> Google satellite + labels (hybrid)</label>
+        <label><input type="checkbox" name="provider" value="bing"> Bing aerial imagery</label>
+        <label><input type="checkbox" name="provider" value="esri"> Esri World Imagery</label>
+        <label><input type="checkbox" name="provider" value="custom" id="custom-checkbox"> Custom tile URL</label>
+      </div>
+
+      <label class="field-label" for="tile-url">Custom tile URL (optional)</label>
+      <input
+        id="tile-url"
+        name="tileUrl"
+        type="text"
+        autocomplete="url"
+        placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        aria-label="Custom tile URL"
+      >
+      <p class="hint">For custom URLs, use Leaflet placeholders such as {x}, {y}, and {z}. Max zoom is configured to 30.</p>
+
+      <div class="dialog-actions">
+        <button type="button" id="use-default">Use OpenStreetMap</button>
+        <button type="submit">Load map</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const MAX_ZOOM = 30;
+      const DEFAULT_PROVIDER = "openstreetmap";
+
+      const STORE_KEY_LAT = "leaflet_map_lat";
+      const STORE_KEY_LNG = "leaflet_map_lng";
+      const STORE_KEY_ZOOM = "leaflet_map_zoom";
+
+      const savedLat = localStorage.getItem(STORE_KEY_LAT);
+      const savedLng = localStorage.getItem(STORE_KEY_LNG);
+      const savedZoom = localStorage.getItem(STORE_KEY_ZOOM);
+
+      const initialCenter = (savedLat !== null && savedLng !== null)
+        ? [parseFloat(savedLat), parseFloat(savedLng)]
+        : [20, 0];
+      const initialZoom = savedZoom !== null ? parseInt(savedZoom, 10) : 2;
+
+      const providers = {
+        openstreetmap: {
+          url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
+        },
+        google: {
+          url: "https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
+          subdomains: ["mt0", "mt1", "mt2", "mt3"],
+          attribution: "Map imagery &copy; Google"
+        },
+        googleHybrid: {
+          url: "https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
+          subdomains: ["mt0", "mt1", "mt2", "mt3"],
+          attribution: "Map imagery &copy; Google"
+        },
+        bing: {
+          type: "bing",
+          attribution: "Imagery &copy; Microsoft Bing"
+        },
+        esri: {
+          url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png",
+          attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> and its data providers'
+        }
+      };
+
+      const dialog = document.getElementById("tile-url-dialog");
+      const form = document.getElementById("tile-url-form");
+      const tileUrlInput = document.getElementById("tile-url");
+      const customCheckbox = document.getElementById("custom-checkbox");
+      const defaultButton = document.getElementById("use-default");
+      const mapGrid = document.getElementById("map-grid");
+      const zoomIndicator = document.getElementById("global-zoom-indicator");
+      const checkboxes = form.querySelectorAll('input[name="provider"]');
+
+      let activeMaps = [];
+
+      zoomIndicator.textContent = `Zoom: ${initialZoom}`;
+
+      // Enforce max 4 selections limit
+      function updateCheckboxLimits() {
+        const checkedCount = form.querySelectorAll('input[name="provider"]:checked').length;
+        if (checkedCount >= 4) {
+          checkboxes.forEach(box => { if (!box.checked) box.disabled = true; });
+        } else {
+          checkboxes.forEach(box => box.disabled = false);
+        }
+      }
+
+      checkboxes.forEach(cb => {
+        cb.addEventListener("change", updateCheckboxLimits);
+      });
+
+      // Auto-check custom checkbox if text is typed and limit allows
+      tileUrlInput.addEventListener("input", () => {
+        if (tileUrlInput.value.trim() && !customCheckbox.checked) {
+          const checkedCount = form.querySelectorAll('input[name="provider"]:checked').length;
+          if (checkedCount < 4) {
+            customCheckbox.checked = true;
+            updateCheckboxLimits();
+          }
+        }
+      });
+
+      function bingQuadKey(x, y, z) {
+        let quadkey = "";
+        for (let i = z; i > 0; i--) {
+          const mask = 1 << (i - 1);
+          let digit = 0;
+          if ((x & mask) !== 0) digit++;
+          if ((y & mask) !== 0) digit += 2;
+          quadkey += digit;
+        }
+        return quadkey;
+      }
+
+      const BingTileLayer = L.TileLayer.extend({
+        getTileUrl(coords) {
+          const quadkey = bingQuadKey(coords.x, coords.y, coords.z);
+          const server = (coords.x + coords.y) % 4;
+          return `https://ecn.t${server}.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=13816`;
+        }
+      });
+
+      function createLayer(providerConfig) {
+        const trimmedCustomUrl = (providerConfig.customUrl || "").trim();
+        if (trimmedCustomUrl) {
+          return L.tileLayer(trimmedCustomUrl, { minZoom: 0, maxZoom: MAX_ZOOM, maxNativeZoom: MAX_ZOOM, attribution: "" });
+        }
+        const providerName = providerConfig.name;
+        if (providerName === "bing") {
+          return new BingTileLayer("", { minZoom: 0, maxZoom: MAX_ZOOM, maxNativeZoom: MAX_ZOOM, attribution: providers.bing.attribution });
+        }
+        const provider = providers[providerName] || providers[DEFAULT_PROVIDER];
+        return L.tileLayer(provider.url, {
+          minZoom: 0,
+          maxZoom: MAX_ZOOM,
+          maxNativeZoom: MAX_ZOOM,
+          subdomains: provider.subdomains || "abc",
+          attribution: provider.attribution || ""
+        });
+      }
+
+      function saveState(map) {
+        const center = map.getCenter();
+        localStorage.setItem(STORE_KEY_LAT, center.lat);
+        localStorage.setItem(STORE_KEY_LNG, center.lng);
+        localStorage.setItem(STORE_KEY_ZOOM, map.getZoom());
+        zoomIndicator.textContent = `Zoom: ${map.getZoom()}`;
+      }
+
+      function setupMapSync(maps) {
+        let isSyncing = false;
+        maps.forEach(m => {
+          m.on("move zoom", () => {
+            if (isSyncing) return;
+            isSyncing = true;
+            const center = m.getCenter();
+            const zoom = m.getZoom();
+            maps.forEach(other => {
+              if (other !== m) {
+                other.setView(center, zoom, { animate: false });
+              }
+            });
+            isSyncing = false;
+            saveState(m);
+          });
+        });
+      }
+
+      function loadMaps(configs) {
+        activeMaps.forEach(m => m.remove());
+        activeMaps = [];
+        mapGrid.innerHTML = "";
+
+        const count = configs.length;
+        const totalSlots = count === 3 || count === 4 ? 4 : count;
+
+        if (count === 1) {
+          mapGrid.style.gridTemplateColumns = "1fr";
+          mapGrid.style.gridTemplateRows = "1fr";
+        } else if (count === 2) {
+          mapGrid.style.gridTemplateColumns = "1fr 1fr";
+          mapGrid.style.gridTemplateRows = "1fr";
+        } else {
+          mapGrid.style.gridTemplateColumns = "1fr 1fr";
+          mapGrid.style.gridTemplateRows = "1fr 1fr";
+        }
+
+        for (let i = 0; i < totalSlots; i++) {
+          const cell = document.createElement("div");
+          if (i < count) {
+            const paneId = `map-pane-${i}`;
+            cell.className = "map-pane";
+            cell.id = paneId;
+            mapGrid.appendChild(cell);
+
+            const map = L.map(paneId, { maxZoom: MAX_ZOOM, zoomControl: i === 0 }).setView(
+              [parseFloat(localStorage.getItem(STORE_KEY_LAT) || initialCenter[0]), 
+               parseFloat(localStorage.getItem(STORE_KEY_LNG) || initialCenter[1])],
+              parseInt(localStorage.getItem(STORE_KEY_ZOOM) || initialZoom, 10)
+            );
+
+            map.on("moveend zoomend", () => {
+              if (activeMaps.length === 1) {
+                saveState(map);
+              }
+            });
+
+            const layer = createLayer(configs[i]);
+            layer.addTo(map);
+            activeMaps.push(map);
+          } else {
+            cell.className = "map-pane empty-pane";
+            cell.innerHTML = "<span>Empty Comparison Slot</span>";
+            mapGrid.appendChild(cell);
+          }
+        }
+
+        if (activeMaps.length > 1) {
+          setupMapSync(activeMaps);
+        }
+
+        dialog.close();
+        setTimeout(() => {
+          activeMaps.forEach(m => m.invalidateSize());
+        }, 100);
+      }
+
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const customUrl = tileUrlInput.value.trim();
+        const checkedBoxes = form.querySelectorAll('input[name="provider"]:checked');
+        
+        let configs = [];
+        checkedBoxes.forEach(cb => {
+          if (cb.value === "custom") {
+            if (customUrl) {
+              configs.push({ name: "", customUrl: customUrl });
+            }
+          } else {
+            configs.push({ name: cb.value, customUrl: "" });
+          }
+        });
+
+        // Limit total configs to 4
+        configs = configs.slice(0, 4);
+
+        if (configs.length === 0) {
+          configs.push({ name: DEFAULT_PROVIDER, customUrl: "" });
+        }
+
+        loadMaps(configs);
+      });
+
+      defaultButton.addEventListener("click", () => {
+        checkboxes.forEach(cb => {
+          cb.checked = (cb.value === DEFAULT_PROVIDER);
+          cb.disabled = false;
+        });
+        tileUrlInput.value = "";
+        loadMaps([{ name: DEFAULT_PROVIDER, customUrl: "" }]);
+      });
+
+      // Automatically load the last map location on startup
+      loadMaps([{ name: DEFAULT_PROVIDER, customUrl: "" }]);
+      dialog.showModal();
+    })();
+  </script>
 </body>
 </html>
