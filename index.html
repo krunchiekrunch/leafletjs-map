@@ -38,6 +38,28 @@
       background: #1e1e1e;
     }
 
+    .map-header {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: rgba(30, 30, 30, 0.85);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font: 12px/1.2 system-ui, sans-serif;
+      border: 1px solid #555;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .map-header span {
+      font-weight: 500;
+      color: #e0e0e0;
+    }
+
     .empty-pane {
       display: flex;
       align-items: center;
@@ -65,7 +87,8 @@
     }
 
     #tile-url-dialog {
-      width: min(560px, calc(100% - 40px));
+      width: min(620px, calc(100% - 40px));
+      max-height: 90vh;
       box-sizing: border-box;
       border: 1px solid #444;
       border-radius: 8px;
@@ -74,36 +97,42 @@
       color: #e0e0e0;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
       font: 14px/1.45 system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
     }
 
     #tile-url-dialog::backdrop { background: rgba(0, 0, 0, 0.7); }
 
-    #tile-url-dialog h1 { margin: 0 0 8px; font-size: 18px; color: #fff; }
-    #tile-url-dialog p { margin: 0 0 14px; color: #bbb; }
+    #tile-url-dialog h1 { margin: 0 0 4px; font-size: 18px; color: #fff; }
+    #tile-url-dialog p { margin: 0 0 12px; color: #bbb; font-size: 13px; }
 
-    #tile-url {
-      display: block;
-      width: 100%;
-      box-sizing: border-box;
-      margin: 0 0 14px;
-      padding: 10px;
+    .dialog-content-scroll {
+      overflow-y: auto;
+      max-height: calc(70vh - 100px);
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .section-box {
       border: 1px solid #555;
-      border-radius: 4px;
+      border-radius: 6px;
+      padding: 12px;
       background: #2a2a2a;
+    }
+
+    .section-box h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
       color: #fff;
-      font: inherit;
     }
 
     #provider-checkboxes {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin: 0 0 14px;
-      padding: 12px;
-      border: 1px solid #555;
-      border-radius: 4px;
-      background: #2a2a2a;
-      max-height: 180px;
+      max-height: 160px;
       overflow-y: auto;
     }
 
@@ -115,14 +144,34 @@
       color: #e0e0e0;
     }
 
-    .dialog-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
+    #provider-checkboxes input:disabled + span {
+      opacity: 0.4;
+      cursor: default;
     }
 
-    .dialog-actions button {
-      padding: 8px 12px;
+    .custom-tile-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+
+    .custom-tile-row input[type="text"] {
+      flex: 1;
+      padding: 6px 8px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #1e1e1e;
+      color: #fff;
+      font: inherit;
+    }
+
+    .custom-tile-row input.nickname-input {
+      max-width: 130px;
+    }
+
+    .danger-btn, .secondary-btn {
+      padding: 6px 10px;
       border: 1px solid #555;
       border-radius: 4px;
       background: #333;
@@ -131,8 +180,136 @@
       font: inherit;
     }
 
-    .dialog-actions button:hover {
+    .danger-btn:hover { background: #5a2a2a; border-color: #884444; }
+    .secondary-btn:hover:not(:disabled) { background: #444; }
+    .secondary-btn:disabled { opacity: 0.4; cursor: default; }
+
+    #layout-order-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .order-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #1e1e1e;
+      border: 1px solid #444;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: grab;
+      position: relative;
+    }
+
+    .order-item:active {
+      cursor: grabbing;
+    }
+
+    .order-item.dragging {
+      opacity: 0.3;
+    }
+
+    .order-item.drag-over-top::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #1f7ec4;
+      border-radius: 2px;
+      box-shadow: 0 0 8px #1f7ec4;
+      z-index: 10;
+    }
+
+    .order-item.drag-over-bottom::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: #1f7ec4;
+      border-radius: 2px;
+      box-shadow: 0 0 8px #1f7ec4;
+      z-index: 10;
+    }
+
+    .order-item span {
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .order-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .drag-handle {
+      color: #888;
+      font-size: 14px;
+      cursor: grab;
+      user-select: none;
+    }
+
+    .order-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .order-buttons button {
+      background: #333;
+      border: 1px solid #555;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .order-buttons button:hover:not(:disabled) {
       background: #444;
+    }
+
+    .order-buttons button:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
+    .dialog-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      border-top: 1px solid #444;
+      padding-top: 12px;
+    }
+
+    .dialog-actions-right {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dialog-actions button {
+      padding: 8px 14px;
+      border: 1px solid #555;
+      border-radius: 4px;
+      background: #333;
+      color: #e0e0e0;
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .dialog-actions button:hover:not(:disabled) {
+      background: #444;
+    }
+
+    .dialog-actions button:disabled {
+      opacity: 0.4;
+      cursor: default;
     }
 
     .dialog-actions button[type="submit"] {
@@ -141,18 +318,11 @@
       background: #1769aa;
     }
 
-    .dialog-actions button[type="submit"]:hover {
+    .dialog-actions button[type="submit"]:hover:not(:disabled) {
       background: #1f7ec4;
     }
 
-    .field-label {
-      display: block;
-      margin: 0 0 5px;
-      font-weight: 600;
-      color: #fff;
-    }
-
-    .hint { color: #aaa; font-size: 12px; }
+    .hint { color: #aaa; font-size: 11px; margin-top: 4px; }
   </style>
 </head>
 <body>
@@ -161,33 +331,37 @@
 
   <dialog id="tile-url-dialog">
     <form id="tile-url-form">
-      <h1>Map tile source</h1>
-      <p>Select up to 4 providers for side-by-side comparison or include a custom tile URL.</p>
+      <h1>Map Tile Comparison Configuration</h1>
+      <p>Select up to 4 map providers or custom tile URLs, manage custom sources, and order their grid layout.</p>
 
-      <label class="field-label">Tile providers</label>
-      <div id="provider-checkboxes">
-        <label><input type="checkbox" name="provider" value="openstreetmap" checked> OpenStreetMap (default)</label>
-        <label><input type="checkbox" name="provider" value="google"> Google satellite</label>
-        <label><input type="checkbox" name="provider" value="googleHybrid"> Google satellite + labels (hybrid)</label>
-        <label><input type="checkbox" name="provider" value="bing"> Bing aerial imagery</label>
-        <label><input type="checkbox" name="provider" value="esri"> Esri World Imagery</label>
-        <label><input type="checkbox" name="provider" value="custom" id="custom-checkbox"> Custom tile URL</label>
+      <div class="dialog-content-scroll">
+        <!-- Preset Providers -->
+        <div class="section-box">
+          <h3>Standard Tile Providers</h3>
+          <div id="provider-checkboxes"></div>
+        </div>
+
+        <!-- Custom Tile Servers Management -->
+        <div class="section-box">
+          <h3>Custom Tile Servers (Max 4 total)</h3>
+          <div id="custom-tiles-container"></div>
+          <button type="button" id="add-custom-tile-input" class="secondary-btn" style="margin-top: 4px;">+ Add Custom Tile URL</button>
+          <div class="hint">Use Leaflet placeholders like {z}, {x}, {y}. Saved automatically in browser storage.</div>
+        </div>
+
+        <!-- Grid Layout Arrangement -->
+        <div class="section-box">
+          <h3>Grid Display Order (Drag or use arrows)</h3>
+          <p style="margin-bottom: 8px;">Arrange the sequence in which the selected layers appear in the comparison grid:</p>
+          <div id="layout-order-list"></div>
+        </div>
       </div>
 
-      <label class="field-label" for="tile-url">Custom tile URL (optional)</label>
-      <input
-        id="tile-url"
-        name="tileUrl"
-        type="text"
-        autocomplete="url"
-        placeholder="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        aria-label="Custom tile URL"
-      >
-      <p class="hint">For custom URLs, use Leaflet placeholders such as {x}, {y}, and {z}. Max zoom is configured to 30.</p>
-
       <div class="dialog-actions">
-        <button type="button" id="use-default">Use OpenStreetMap</button>
-        <button type="submit">Load map</button>
+        <button type="button" id="clear-storage-btn" class="danger-btn">Clear Stored Data & Reload</button>
+        <div class="dialog-actions-right">
+          <button type="submit" id="apply-btn">Apply & Load Maps</button>
+        </div>
       </div>
     </form>
   </dialog>
@@ -204,10 +378,13 @@
 
       const MAX_ZOOM = 30;
       const DEFAULT_PROVIDER = "openstreetmap";
+      const MAX_TOTAL_MAPS = 4;
 
       const STORE_KEY_LAT = "leaflet_map_lat";
       const STORE_KEY_LNG = "leaflet_map_lng";
       const STORE_KEY_ZOOM = "leaflet_map_zoom";
+      const STORE_KEY_CUSTOM_TILES = "leaflet_custom_tiles_v17";
+      const STORE_KEY_CONFIGS = "leaflet_map_configs_v17";
 
       const savedLat = localStorage.getItem(STORE_KEY_LAT);
       const savedLng = localStorage.getItem(STORE_KEY_LNG);
@@ -220,67 +397,328 @@
 
       const providers = {
         openstreetmap: {
+          name: "OpenStreetMap",
           url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>',
         },
         google: {
+          name: "Google Satellite",
           url: "https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}",
           subdomains: ["mt0", "mt1", "mt2", "mt3"],
-          attribution: "Map imagery &copy; Google"
+          attribution: "&copy; Google"
         },
         googleHybrid: {
+          name: "Google Hybrid",
           url: "https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}",
           subdomains: ["mt0", "mt1", "mt2", "mt3"],
-          attribution: "Map imagery &copy; Google"
+          attribution: "&copy; Google"
         },
         bing: {
+          name: "Bing Aerial",
           type: "bing",
-          attribution: "Imagery &copy; Microsoft Bing"
+          attribution: "&copy; Microsoft Bing"
         },
         esri: {
+          name: "Esri World Imagery",
           url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png",
-          attribution: 'Tiles &copy; <a href="https://www.esri.com/">Esri</a> and its data providers'
+          attribution: '&copy; <a href="https://www.esri.com/">Esri</a> and its data providers'
+        },
+        satlasSR: {
+          name: "Ai2 Satlas Super Resolution (via GeoFS SR)",
+          url: "https://data.geo-fs.com/superres/{z}/{x}/{y}.webp",
+          attribution: 'The Allen Institute for Artificial Intelligence <a href="https://satlas.allen.ai/superres">Satlas Super-Resolution</a>'
+        },
+        satlasSR2023: {
+          name: "Ai2 Satlas Super Resolution 2023",
+          url: "https://se-tile-api.allen.ai/mosaic/superres/sr2023/tci/{z}/{x}/{y}.webp",
+          attribution: 'The Allen Institute for Artificial Intelligence <a href="https://satlas.allen.ai/superres">Satlas Super-Resolution</a>'
         }
       };
 
       const dialog = document.getElementById("tile-url-dialog");
       const form = document.getElementById("tile-url-form");
-      const tileUrlInput = document.getElementById("tile-url");
-      const customCheckbox = document.getElementById("custom-checkbox");
-      const defaultButton = document.getElementById("use-default");
+      const applyBtn = document.getElementById("apply-btn");
+      const clearStorageBtn = document.getElementById("clear-storage-btn");
       const mapGrid = document.getElementById("map-grid");
       const zoomIndicator = document.getElementById("global-zoom-indicator");
-      const checkboxes = form.querySelectorAll('input[name="provider"]');
+      const checkboxesContainer = document.getElementById("provider-checkboxes");
+      const customTilesContainer = document.getElementById("custom-tiles-container");
+      const addCustomTileBtn = document.getElementById("add-custom-tile-input");
+      const layoutOrderList = document.getElementById("layout-order-list");
 
       let activeMaps = [];
+      let customTileServers = [];
+      let currentConfigs = [];
 
-      zoomIndicator.textContent = `Zoom: ${initialZoom}`;
+      function loadInitialData() {
+        try {
+          const storedCustom = localStorage.getItem(STORE_KEY_CUSTOM_TILES);
+          if (storedCustom) customTileServers = JSON.parse(storedCustom);
+        } catch (e) {
+          customTileServers = [];
+        }
 
-      // Enforce max 4 selections limit
-      function updateCheckboxLimits() {
-        const checkedCount = form.querySelectorAll('input[name="provider"]:checked').length;
-        if (checkedCount >= 4) {
-          checkboxes.forEach(box => { if (!box.checked) box.disabled = true; });
-        } else {
-          checkboxes.forEach(box => box.disabled = false);
+        try {
+          const storedConfigs = localStorage.getItem(STORE_KEY_CONFIGS);
+          if (storedConfigs) {
+            currentConfigs = JSON.parse(storedConfigs);
+          }
+        } catch (e) {
+          currentConfigs = [];
+        }
+
+        if (!currentConfigs) {
+          currentConfigs = [];
         }
       }
 
-      checkboxes.forEach(cb => {
-        cb.addEventListener("change", updateCheckboxLimits);
-      });
+      loadInitialData();
+      zoomIndicator.textContent = `Zoom: ${initialZoom}`;
 
-      // Auto-check custom checkbox if text is typed and limit allows
-      tileUrlInput.addEventListener("input", () => {
-        if (tileUrlInput.value.trim() && !customCheckbox.checked) {
-          const checkedCount = form.querySelectorAll('input[name="provider"]:checked').length;
-          if (checkedCount < 4) {
-            customCheckbox.checked = true;
-            updateCheckboxLimits();
+      function saveCustomTilesStorage() {
+        localStorage.setItem(STORE_KEY_CUSTOM_TILES, JSON.stringify(customTileServers));
+      }
+
+      function buildDialogUI() {
+        checkboxesContainer.innerHTML = "";
+        Object.keys(providers).forEach(key => {
+          const p = providers[key];
+          const isChecked = currentConfigs.some(c => c.type === "preset" && c.key === key);
+          const label = document.createElement("label");
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.name = "provider";
+          cb.value = key;
+          cb.checked = isChecked;
+          cb.addEventListener("change", () => {
+            syncConfigsFromDialogInputs();
+          });
+          label.appendChild(cb);
+          
+          const textSpan = document.createElement("span");
+          textSpan.textContent = ` ${p.name}`;
+          label.appendChild(textSpan);
+
+          checkboxesContainer.appendChild(label);
+        });
+
+        customTilesContainer.innerHTML = "";
+        customTileServers.forEach((item, index) => {
+          const row = document.createElement("div");
+          row.className = "custom-tile-row";
+
+          const nickInput = document.createElement("input");
+          nickInput.type = "text";
+          nickInput.className = "nickname-input";
+          nickInput.placeholder = `Custom Map ${index + 1}`;
+          nickInput.value = item.nickname || "";
+          nickInput.addEventListener("input", (e) => {
+            item.nickname = e.target.value;
+            saveCustomTilesStorage();
+            syncConfigsFromDialogInputs();
+          });
+
+          const urlInput = document.createElement("input");
+          urlInput.type = "text";
+          urlInput.placeholder = "https://example.com/{z}/{x}/{y}.png";
+          urlInput.value = item.url || "";
+          urlInput.addEventListener("input", (e) => {
+            item.url = e.target.value;
+            saveCustomTilesStorage();
+            syncConfigsFromDialogInputs();
+          });
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "danger-btn";
+          delBtn.textContent = "✕";
+          delBtn.title = "Remove source";
+          delBtn.addEventListener("click", () => {
+            customTileServers.splice(index, 1);
+            saveCustomTilesStorage();
+            buildDialogUI();
+            syncConfigsFromDialogInputs();
+          });
+
+          row.appendChild(nickInput);
+          row.appendChild(urlInput);
+          row.appendChild(delBtn);
+          customTilesContainer.appendChild(row);
+        });
+
+        syncConfigsFromDialogInputs();
+      }
+
+      function syncConfigsFromDialogInputs() {
+        const newConfigs = [];
+
+        const checkedBoxes = checkboxesContainer.querySelectorAll('input[name="provider"]:checked');
+        checkedBoxes.forEach(box => {
+          const key = box.value;
+          const existing = currentConfigs.find(c => c.type === "preset" && c.key === key);
+          if (existing) {
+            newConfigs.push(existing);
+          } else {
+            newConfigs.push({ type: "preset", key: key, nickname: providers[key] ? providers[key].name : key });
           }
+        });
+
+        customTileServers.forEach((item, idx) => {
+          const existing = currentConfigs.find(c => c.type === "custom" && c.id === item.id);
+          const fallbackName = `Custom Map ${idx + 1}`;
+          if (existing) {
+            existing.nickname = item.nickname && item.nickname.trim() ? item.nickname : fallbackName;
+            existing.url = (item.url || "").trim();
+            newConfigs.push(existing);
+          } else {
+            newConfigs.push({ type: "custom", id: item.id, url: (item.url || "").trim(), nickname: item.nickname && item.nickname.trim() ? item.nickname : fallbackName });
+          }
+        });
+
+        currentConfigs = newConfigs.slice(0, MAX_TOTAL_MAPS);
+
+        const totalCount = currentConfigs.length;
+
+        const allBoxes = checkboxesContainer.querySelectorAll('input[name="provider"]');
+        allBoxes.forEach(box => {
+          if (totalCount >= MAX_TOTAL_MAPS && !box.checked) {
+            box.disabled = true;
+          } else {
+            box.disabled = false;
+          }
+        });
+
+        addCustomTileBtn.disabled = (totalCount >= MAX_TOTAL_MAPS) || (customTileServers.length >= MAX_TOTAL_MAPS);
+        applyBtn.disabled = totalCount === 0;
+
+        renderOrderListUI();
+      }
+
+      function renderOrderListUI() {
+        layoutOrderList.innerHTML = "";
+        if (currentConfigs.length === 0) {
+          layoutOrderList.innerHTML = `<div class="hint" style="padding: 6px;">No maps selected. Check at least one provider or add a custom tile slot.</div>`;
+          return;
+        }
+
+        currentConfigs.forEach((item, index) => {
+          const orderItem = document.createElement("div");
+          orderItem.className = "order-item";
+          orderItem.draggable = true;
+          orderItem.dataset.index = index;
+
+          orderItem.addEventListener("dragstart", (e) => {
+            e.dataTransfer.setData("text/plain", index);
+            orderItem.classList.add("dragging");
+          });
+
+          orderItem.addEventListener("dragend", () => {
+            orderItem.classList.remove("dragging");
+            layoutOrderList.querySelectorAll(".order-item").forEach(el => {
+              el.classList.remove("drag-over-top", "drag-over-bottom");
+            });
+          });
+
+          orderItem.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            const rect = orderItem.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            
+            layoutOrderList.querySelectorAll(".order-item").forEach(el => {
+              el.classList.remove("drag-over-top", "drag-over-bottom");
+            });
+
+            if (e.clientY < midpoint) {
+              orderItem.classList.add("drag-over-top");
+            } else {
+              orderItem.classList.add("drag-over-bottom");
+            }
+          });
+
+          orderItem.addEventListener("dragleave", () => {
+            orderItem.classList.remove("drag-over-top", "drag-over-bottom");
+          });
+
+          orderItem.addEventListener("drop", (e) => {
+            e.preventDefault();
+            const fromIndex = parseInt(e.dataTransfer.getData("text/plain"), 10);
+            const rect = orderItem.getBoundingClientRect();
+            const midpoint = rect.top + rect.height / 2;
+            let toIndex = index;
+            if (e.clientY >= midpoint) {
+              toIndex = index + 1;
+            }
+
+            if (!isNaN(fromIndex)) {
+              const moved = currentConfigs.splice(fromIndex, 1)[0];
+              if (fromIndex < toIndex) toIndex--;
+              currentConfigs.splice(toIndex, 0, moved);
+              renderOrderListUI();
+            }
+          });
+
+          const nameSpan = document.createElement("span");
+          nameSpan.textContent = `${index + 1}. ${item.nickname}` + (item.type === "custom" && !item.url ? " (Empty URL)" : "");
+
+          const controlsDiv = document.createElement("div");
+          controlsDiv.className = "order-controls";
+
+          const handle = document.createElement("span");
+          handle.className = "drag-handle";
+          handle.textContent = "☰";
+          handle.title = "Drag to reorder";
+
+          const btnGroup = document.createElement("div");
+          btnGroup.className = "order-buttons";
+
+          const upBtn = document.createElement("button");
+          upBtn.type = "button";
+          upBtn.textContent = "▲";
+          upBtn.disabled = index === 0;
+          upBtn.addEventListener("click", () => {
+            if (index > 0) {
+              const temp = currentConfigs[index];
+              currentConfigs[index] = currentConfigs[index - 1];
+              currentConfigs[index - 1] = temp;
+              renderOrderListUI();
+            }
+          });
+
+          const downBtn = document.createElement("button");
+          downBtn.type = "button";
+          downBtn.textContent = "▼";
+          downBtn.disabled = index === currentConfigs.length - 1;
+          downBtn.addEventListener("click", () => {
+            if (index < currentConfigs.length - 1) {
+              const temp = currentConfigs[index];
+              currentConfigs[index] = currentConfigs[index + 1];
+              currentConfigs[index + 1] = temp;
+              renderOrderListUI();
+            }
+          });
+
+          btnGroup.appendChild(upBtn);
+          btnGroup.appendChild(downBtn);
+
+          controlsDiv.appendChild(handle);
+          controlsDiv.appendChild(btnGroup);
+
+          orderItem.appendChild(nameSpan);
+          orderItem.appendChild(controlsDiv);
+          layoutOrderList.appendChild(orderItem);
+        });
+      }
+
+      addCustomTileBtn.addEventListener("click", () => {
+        if (currentConfigs.length < MAX_TOTAL_MAPS && customTileServers.length < MAX_TOTAL_MAPS) {
+          const nextIdNum = customTileServers.length + 1;
+          customTileServers.push({ id: `custom_${nextIdNum}`, url: "", nickname: "" });
+          saveCustomTilesStorage();
+          buildDialogUI();
         }
       });
 
+      // Bing start
       function bingQuadKey(x, y, z) {
         let quadkey = "";
         for (let i = z; i > 0; i--) {
@@ -300,13 +738,14 @@
           return `https://ecn.t${server}.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=13816`;
         }
       });
+      // Bing end
 
-      function createLayer(providerConfig) {
-        const trimmedCustomUrl = (providerConfig.customUrl || "").trim();
-        if (trimmedCustomUrl) {
-          return L.tileLayer(trimmedCustomUrl, { minZoom: 0, maxZoom: MAX_ZOOM, maxNativeZoom: MAX_ZOOM, attribution: "" });
+      function createLayer(config) {
+        if (config.type === "custom") {
+          if (!config.url) return null;
+          return L.tileLayer(config.url, { minZoom: 0, maxZoom: MAX_ZOOM, maxNativeZoom: MAX_ZOOM, attribution: "" });
         }
-        const providerName = providerConfig.name;
+        const providerName = config.key;
         if (providerName === "bing") {
           return new BingTileLayer("", { minZoom: 0, maxZoom: MAX_ZOOM, maxNativeZoom: MAX_ZOOM, attribution: providers.bing.attribution });
         }
@@ -348,11 +787,17 @@
       }
 
       function loadMaps(configs) {
+        if (!configs || configs.length === 0) {
+          return;
+        }
+        currentConfigs = configs.slice(0, MAX_TOTAL_MAPS);
+        localStorage.setItem(STORE_KEY_CONFIGS, JSON.stringify(currentConfigs));
+
         activeMaps.forEach(m => m.remove());
         activeMaps = [];
         mapGrid.innerHTML = "";
 
-        const count = configs.length;
+        const count = currentConfigs.length;
         const totalSlots = count === 3 || count === 4 ? 4 : count;
 
         if (count === 1) {
@@ -374,11 +819,17 @@
             cell.id = paneId;
             mapGrid.appendChild(cell);
 
-            const map = L.map(paneId, { maxZoom: MAX_ZOOM, zoomControl: i === 0 }).setView(
-              [parseFloat(localStorage.getItem(STORE_KEY_LAT) || initialCenter[0]), 
-               parseFloat(localStorage.getItem(STORE_KEY_LNG) || initialCenter[1])],
-              parseInt(localStorage.getItem(STORE_KEY_ZOOM) || initialZoom, 10)
-            );
+            const header = document.createElement("div");
+            header.className = "map-header";
+            const span = document.createElement("span");
+            span.textContent = currentConfigs[i].nickname || "Map Layer";
+            header.appendChild(span);
+            cell.appendChild(header);
+
+            const mapCenter = savedLat !== null && savedLng !== null ? [parseFloat(savedLat), parseFloat(savedLng)] : initialCenter;
+            const mapZoom = savedZoom !== null ? parseInt(savedZoom, 10) : initialZoom;
+
+            const map = L.map(paneId, { maxZoom: MAX_ZOOM, zoomControl: i === 0 }).setView(mapCenter, mapZoom);
 
             map.on("moveend zoomend", () => {
               if (activeMaps.length === 1) {
@@ -386,12 +837,14 @@
               }
             });
 
-            const layer = createLayer(configs[i]);
-            layer.addTo(map);
+            const layer = createLayer(currentConfigs[i]);
+            if (layer) {
+              layer.addTo(map);
+            }
             activeMaps.push(map);
           } else {
             cell.className = "map-pane empty-pane";
-            cell.innerHTML = "<span>Empty Comparison Slot</span>";
+            cell.innerHTML = "<span>Empty</span>";
             mapGrid.appendChild(cell);
           }
         }
@@ -408,41 +861,25 @@
 
       form.addEventListener("submit", (event) => {
         event.preventDefault();
-        const customUrl = tileUrlInput.value.trim();
-        const checkedBoxes = form.querySelectorAll('input[name="provider"]:checked');
-        
-        let configs = [];
-        checkedBoxes.forEach(cb => {
-          if (cb.value === "custom") {
-            if (customUrl) {
-              configs.push({ name: "", customUrl: customUrl });
-            }
-          } else {
-            configs.push({ name: cb.value, customUrl: "" });
-          }
-        });
-
-        // Limit total configs to 4
-        configs = configs.slice(0, 4);
-
-        if (configs.length === 0) {
-          configs.push({ name: DEFAULT_PROVIDER, customUrl: "" });
+        if (currentConfigs.length > 0) {
+          loadMaps(currentConfigs);
         }
-
-        loadMaps(configs);
       });
 
-      defaultButton.addEventListener("click", () => {
-        checkboxes.forEach(cb => {
-          cb.checked = (cb.value === DEFAULT_PROVIDER);
-          cb.disabled = false;
-        });
-        tileUrlInput.value = "";
-        loadMaps([{ name: DEFAULT_PROVIDER, customUrl: "" }]);
+      clearStorageBtn.addEventListener("click", () => {
+        localStorage.removeItem(STORE_KEY_LAT);
+        localStorage.removeItem(STORE_KEY_LNG);
+        localStorage.removeItem(STORE_KEY_ZOOM);
+        localStorage.removeItem(STORE_KEY_CUSTOM_TILES);
+        localStorage.removeItem(STORE_KEY_CONFIGS);
+        window.location.href = window.location.pathname;
       });
 
-      // Automatically load the last map location on startup
-      loadMaps([{ name: DEFAULT_PROVIDER, customUrl: "" }]);
+      buildDialogUI();
+
+      if (currentConfigs.length > 0) {
+        loadMaps(currentConfigs);
+      }
       dialog.showModal();
     })();
   </script>
