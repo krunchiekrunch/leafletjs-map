@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Map Tiles Comparison</title>
+  <title>Map Tiles Comparison with Overlays</title>
 
   <link
     rel="stylesheet"
@@ -50,14 +50,20 @@
       font: 12px/1.2 system-ui, sans-serif;
       border: 1px solid #555;
       display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
 
     .map-header span {
       font-weight: 500;
       color: #e0e0e0;
+    }
+
+    .map-header .overlay-tag {
+      font-size: 10px;
+      color: #8ab4f8;
     }
 
     .empty-pane {
@@ -87,7 +93,7 @@
     }
 
     #tile-url-dialog {
-      width: min(620px, calc(100% - 40px));
+      width: min(660px, calc(100% - 40px));
       max-height: 90vh;
       box-sizing: border-box;
       border: 1px solid #444;
@@ -156,8 +162,7 @@
       align-items: center;
     }
 
-    .custom-tile-row input[type="text"] {
-      flex: 1;
+    .custom-tile-row input[type="text"], .custom-tile-row select {
       padding: 6px 8px;
       border: 1px solid #555;
       border-radius: 4px;
@@ -166,8 +171,16 @@
       font: inherit;
     }
 
+    .custom-tile-row input[type="text"] {
+      flex: 1;
+    }
+
     .custom-tile-row input.nickname-input {
-      max-width: 130px;
+      max-width: 120px;
+    }
+
+    .custom-tile-row select.target-select {
+      max-width: 110px;
     }
 
     .danger-btn, .secondary-btn {
@@ -202,13 +215,8 @@
       position: relative;
     }
 
-    .order-item:active {
-      cursor: grabbing;
-    }
-
-    .order-item.dragging {
-      opacity: 0.3;
-    }
+    .order-item:active { cursor: grabbing; }
+    .order-item.dragging { opacity: 0.3; }
 
     .order-item.drag-over-top::before {
       content: '';
@@ -269,14 +277,8 @@
       font-size: 12px;
     }
 
-    .order-buttons button:hover:not(:disabled) {
-      background: #444;
-    }
-
-    .order-buttons button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
+    .order-buttons button:hover:not(:disabled) { background: #444; }
+    .order-buttons button:disabled { opacity: 0.4; cursor: default; }
 
     .dialog-actions {
       display: flex;
@@ -303,14 +305,8 @@
       font: inherit;
     }
 
-    .dialog-actions button:hover:not(:disabled) {
-      background: #444;
-    }
-
-    .dialog-actions button:disabled {
-      opacity: 0.4;
-      cursor: default;
-    }
+    .dialog-actions button:hover:not(:disabled) { background: #444; }
+    .dialog-actions button:disabled { opacity: 0.4; cursor: default; }
 
     .dialog-actions button[type="submit"] {
       color: white;
@@ -318,9 +314,7 @@
       background: #1769aa;
     }
 
-    .dialog-actions button[type="submit"]:hover:not(:disabled) {
-      background: #1f7ec4;
-    }
+    .dialog-actions button[type="submit"]:hover:not(:disabled) { background: #1f7ec4; }
 
     .hint { color: #aaa; font-size: 11px; margin-top: 4px; }
   </style>
@@ -332,7 +326,7 @@
   <dialog id="tile-url-dialog">
     <form id="tile-url-form">
       <h1>Map Tile Comparison Configuration</h1>
-      <p>Select up to 4 map providers or custom tile URLs, manage custom sources, and order their grid layout.</p>
+      <p>Select base providers or custom maps, assign overlay layers to specific grid sectors, and order the layout.</p>
 
       <div class="dialog-content-scroll">
         <!-- Preset Providers -->
@@ -343,16 +337,23 @@
 
         <!-- Custom Tile Servers Management -->
         <div class="section-box">
-          <h3>Custom Tile Servers (Max 4 total)</h3>
+          <h3>Custom Base Tile Servers (Max 4 total)</h3>
           <div id="custom-tiles-container"></div>
-          <button type="button" id="add-custom-tile-input" class="secondary-btn" style="margin-top: 4px;">+ Add Custom Tile URL</button>
-          <div class="hint">Use Leaflet placeholders like {z}, {x}, {y}. Saved automatically in browser storage.</div>
+          <button type="button" id="add-custom-tile-input" class="secondary-btn" style="margin-top: 4px;">+ Add Custom Base URL</button>
+          <div class="hint">Use placeholders like {z}, {x}, {y}.</div>
+        </div>
+
+        <!-- Overlay Tile Servers Management -->
+        <div class="section-box">
+          <h3>Overlay Tile Servers</h3>
+          <div id="overlay-tiles-container"></div>
+          <button type="button" id="add-overlay-tile-input" class="secondary-btn" style="margin-top: 4px;">+ Add Overlay Tile URL</button>
+          <div class="hint">Transparent image tiles rendered on top of the chosen grid sector.</div>
         </div>
 
         <!-- Grid Layout Arrangement -->
         <div class="section-box">
           <h3>Grid Display Order (Drag or use arrows)</h3>
-          <p style="margin-bottom: 8px;">Arrange the sequence in which the selected layers appear in the comparison grid:</p>
           <div id="layout-order-list"></div>
         </div>
       </div>
@@ -380,11 +381,12 @@
       const DEFAULT_PROVIDER = "openstreetmap";
       const MAX_TOTAL_MAPS = 4;
 
-      const STORE_KEY_LAT = "leaflet_map_lat";
-      const STORE_KEY_LNG = "leaflet_map_lng";
-      const STORE_KEY_ZOOM = "leaflet_map_zoom";
-      const STORE_KEY_CUSTOM_TILES = "leaflet_custom_tiles_v17";
-      const STORE_KEY_CONFIGS = "leaflet_map_configs_v17";
+      const STORE_KEY_LAT = "leaflet_map_lat_v18";
+      const STORE_KEY_LNG = "leaflet_map_lng_v18";
+      const STORE_KEY_ZOOM = "leaflet_map_zoom_v18";
+      const STORE_KEY_CUSTOM_TILES = "leaflet_custom_tiles_v18";
+      const STORE_KEY_OVERLAYS = "leaflet_overlays_v18";
+      const STORE_KEY_CONFIGS = "leaflet_map_configs_v18";
 
       const savedLat = localStorage.getItem(STORE_KEY_LAT);
       const savedLng = localStorage.getItem(STORE_KEY_LNG);
@@ -422,16 +424,6 @@
           name: "Esri World Imagery",
           url: "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}.png",
           attribution: '&copy; <a href="https://www.esri.com/">Esri</a> and its data providers'
-        },
-        satlasSR: {
-          name: "Ai2 Satlas Super Resolution (via GeoFS SR)",
-          url: "https://data.geo-fs.com/superres/{z}/{x}/{y}.webp",
-          attribution: 'The Allen Institute for Artificial Intelligence <a href="https://satlas.allen.ai/superres">Satlas Super-Resolution</a>'
-        },
-        satlasSR2023: {
-          name: "Ai2 Satlas Super Resolution 2023",
-          url: "https://se-tile-api.allen.ai/mosaic/superres/sr2023/tci/{z}/{x}/{y}.webp",
-          attribution: 'The Allen Institute for Artificial Intelligence <a href="https://satlas.allen.ai/superres">Satlas Super-Resolution</a>'
         }
       };
 
@@ -443,43 +435,45 @@
       const zoomIndicator = document.getElementById("global-zoom-indicator");
       const checkboxesContainer = document.getElementById("provider-checkboxes");
       const customTilesContainer = document.getElementById("custom-tiles-container");
+      const overlayTilesContainer = document.getElementById("overlay-tiles-container");
       const addCustomTileBtn = document.getElementById("add-custom-tile-input");
+      const addOverlayTileBtn = document.getElementById("add-overlay-tile-input");
       const layoutOrderList = document.getElementById("layout-order-list");
 
       let activeMaps = [];
       let customTileServers = [];
+      let overlayTileServers = [];
       let currentConfigs = [];
 
       function loadInitialData() {
         try {
           const storedCustom = localStorage.getItem(STORE_KEY_CUSTOM_TILES);
           if (storedCustom) customTileServers = JSON.parse(storedCustom);
-        } catch (e) {
-          customTileServers = [];
-        }
+        } catch (e) { customTileServers = []; }
+
+        try {
+          const storedOverlays = localStorage.getItem(STORE_KEY_OVERLAYS);
+          if (storedOverlays) overlayTileServers = JSON.parse(storedOverlays);
+        } catch (e) { overlayTileServers = []; }
 
         try {
           const storedConfigs = localStorage.getItem(STORE_KEY_CONFIGS);
-          if (storedConfigs) {
-            currentConfigs = JSON.parse(storedConfigs);
-          }
-        } catch (e) {
-          currentConfigs = [];
-        }
+          if (storedConfigs) currentConfigs = JSON.parse(storedConfigs);
+        } catch (e) { currentConfigs = []; }
 
-        if (!currentConfigs) {
-          currentConfigs = [];
-        }
+        if (!currentConfigs) currentConfigs = [];
       }
 
       loadInitialData();
       zoomIndicator.textContent = `Zoom: ${initialZoom}`;
 
-      function saveCustomTilesStorage() {
+      function saveStorage() {
         localStorage.setItem(STORE_KEY_CUSTOM_TILES, JSON.stringify(customTileServers));
+        localStorage.setItem(STORE_KEY_OVERLAYS, JSON.stringify(overlayTileServers));
       }
 
       function buildDialogUI() {
+        // Render provider checkboxes
         checkboxesContainer.innerHTML = "";
         Object.keys(providers).forEach(key => {
           const p = providers[key];
@@ -502,6 +496,7 @@
           checkboxesContainer.appendChild(label);
         });
 
+        // Render Custom Base Tile Inputs
         customTilesContainer.innerHTML = "";
         customTileServers.forEach((item, index) => {
           const row = document.createElement("div");
@@ -510,11 +505,11 @@
           const nickInput = document.createElement("input");
           nickInput.type = "text";
           nickInput.className = "nickname-input";
-          nickInput.placeholder = `Custom Map ${index + 1}`;
+          nickInput.placeholder = `Custom ${index + 1}`;
           nickInput.value = item.nickname || "";
           nickInput.addEventListener("input", (e) => {
             item.nickname = e.target.value;
-            saveCustomTilesStorage();
+            saveStorage();
             syncConfigsFromDialogInputs();
           });
 
@@ -524,7 +519,7 @@
           urlInput.value = item.url || "";
           urlInput.addEventListener("input", (e) => {
             item.url = e.target.value;
-            saveCustomTilesStorage();
+            saveStorage();
             syncConfigsFromDialogInputs();
           });
 
@@ -535,7 +530,7 @@
           delBtn.title = "Remove source";
           delBtn.addEventListener("click", () => {
             customTileServers.splice(index, 1);
-            saveCustomTilesStorage();
+            saveStorage();
             buildDialogUI();
             syncConfigsFromDialogInputs();
           });
@@ -544,6 +539,67 @@
           row.appendChild(urlInput);
           row.appendChild(delBtn);
           customTilesContainer.appendChild(row);
+        });
+
+        // Render Overlay Inputs
+        overlayTilesContainer.innerHTML = "";
+        overlayTileServers.forEach((item, index) => {
+          const row = document.createElement("div");
+          row.className = "custom-tile-row";
+
+          const nickInput = document.createElement("input");
+          nickInput.type = "text";
+          nickInput.className = "nickname-input";
+          nickInput.placeholder = `Overlay ${index + 1}`;
+          nickInput.value = item.nickname || "";
+          nickInput.addEventListener("input", (e) => {
+            item.nickname = e.target.value;
+            saveStorage();
+            syncConfigsFromDialogInputs();
+          });
+
+          const urlInput = document.createElement("input");
+          urlInput.type = "text";
+          urlInput.placeholder = "https://example.com/overlay/{z}/{x}/{y}.png";
+          urlInput.value = item.url || "";
+          urlInput.addEventListener("input", (e) => {
+            item.url = e.target.value;
+            saveStorage();
+            syncConfigsFromDialogInputs();
+          });
+
+          const targetSelect = document.createElement("select");
+          targetSelect.className = "target-select";
+          for (let s = 0; s < MAX_TOTAL_MAPS; s++) {
+            const opt = document.createElement("option");
+            opt.value = s;
+            opt.textContent = `Sector ${s + 1}`;
+            if (item.targetIndex === s) opt.selected = true;
+            targetSelect.appendChild(opt);
+          }
+          targetSelect.addEventListener("change", (e) => {
+            item.targetIndex = parseInt(e.target.value, 10);
+            saveStorage();
+            syncConfigsFromDialogInputs();
+          });
+
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "danger-btn";
+          delBtn.textContent = "✕";
+          delBtn.title = "Remove overlay";
+          delBtn.addEventListener("click", () => {
+            overlayTileServers.splice(index, 1);
+            saveStorage();
+            buildDialogUI();
+            syncConfigsFromDialogInputs();
+          });
+
+          row.appendChild(nickInput);
+          row.appendChild(urlInput);
+          row.appendChild(targetSelect);
+          row.appendChild(delBtn);
+          overlayTilesContainer.appendChild(row);
         });
 
         syncConfigsFromDialogInputs();
@@ -565,7 +621,7 @@
 
         customTileServers.forEach((item, idx) => {
           const existing = currentConfigs.find(c => c.type === "custom" && c.id === item.id);
-          const fallbackName = `Custom Map ${idx + 1}`;
+          const fallbackName = `Custom ${idx + 1}`;
           if (existing) {
             existing.nickname = item.nickname && item.nickname.trim() ? item.nickname : fallbackName;
             existing.url = (item.url || "").trim();
@@ -597,7 +653,7 @@
       function renderOrderListUI() {
         layoutOrderList.innerHTML = "";
         if (currentConfigs.length === 0) {
-          layoutOrderList.innerHTML = `<div class="hint" style="padding: 6px;">No maps selected. Check at least one provider or add a custom tile slot.</div>`;
+          layoutOrderList.innerHTML = `<div class="hint" style="padding: 6px;">No maps selected. Check at least one provider or add a custom tile source.</div>`;
           return;
         }
 
@@ -658,7 +714,7 @@
           });
 
           const nameSpan = document.createElement("span");
-          nameSpan.textContent = `${index + 1}. ${item.nickname}` + (item.type === "custom" && !item.url ? " (Empty URL)" : "");
+          nameSpan.textContent = `${index + 1}. ${item.nickname}`;
 
           const controlsDiv = document.createElement("div");
           controlsDiv.className = "order-controls";
@@ -666,7 +722,6 @@
           const handle = document.createElement("span");
           handle.className = "drag-handle";
           handle.textContent = "☰";
-          handle.title = "Drag to reorder";
 
           const btnGroup = document.createElement("div");
           btnGroup.className = "order-buttons";
@@ -713,12 +768,19 @@
         if (currentConfigs.length < MAX_TOTAL_MAPS && customTileServers.length < MAX_TOTAL_MAPS) {
           const nextIdNum = customTileServers.length + 1;
           customTileServers.push({ id: `custom_${nextIdNum}`, url: "", nickname: "" });
-          saveCustomTilesStorage();
+          saveStorage();
           buildDialogUI();
         }
       });
 
-      // Bing start
+      addOverlayTileBtn.addEventListener("click", () => {
+        const nextIdNum = overlayTileServers.length + 1;
+        overlayTileServers.push({ id: `overlay_${nextIdNum}`, url: "", nickname: "", targetIndex: 0 });
+        saveStorage();
+        buildDialogUI();
+      });
+
+      // Bing quadkey conversion
       function bingQuadKey(x, y, z) {
         let quadkey = "";
         for (let i = z; i > 0; i--) {
@@ -738,9 +800,8 @@
           return `https://ecn.t${server}.tiles.virtualearth.net/tiles/a${quadkey}.jpeg?g=13816`;
         }
       });
-      // Bing end
 
-      function createLayer(config) {
+      function createBaseLayer(config) {
         if (config.type === "custom") {
           if (!config.url) return null;
           return L.tileLayer(config.url, { minZoom: 0, maxZoom: MAX_ZOOM, maxNativeZoom: MAX_ZOOM, attribution: "" });
@@ -787,9 +848,7 @@
       }
 
       function loadMaps(configs) {
-        if (!configs || configs.length === 0) {
-          return;
-        }
+        if (!configs || configs.length === 0) return;
         currentConfigs = configs.slice(0, MAX_TOTAL_MAPS);
         localStorage.setItem(STORE_KEY_CONFIGS, JSON.stringify(currentConfigs));
 
@@ -819,11 +878,23 @@
             cell.id = paneId;
             mapGrid.appendChild(cell);
 
+            // Find matching overlays for this sector
+            const sectorOverlays = overlayTileServers.filter(o => o.targetIndex === i && o.url && o.url.trim() !== "");
+
             const header = document.createElement("div");
             header.className = "map-header";
+            
             const span = document.createElement("span");
             span.textContent = currentConfigs[i].nickname || "Map Layer";
             header.appendChild(span);
+
+            sectorOverlays.forEach(ov => {
+              const ovSpan = document.createElement("span");
+              ovSpan.className = "overlay-tag";
+              ovSpan.textContent = `+ ${ov.nickname || "Overlay"}`;
+              header.appendChild(ovSpan);
+            });
+
             cell.appendChild(header);
 
             const mapCenter = savedLat !== null && savedLng !== null ? [parseFloat(savedLat), parseFloat(savedLng)] : initialCenter;
@@ -837,10 +908,23 @@
               }
             });
 
-            const layer = createLayer(currentConfigs[i]);
-            if (layer) {
-              layer.addTo(map);
+            // Add Base Layer
+            const baseLayer = createBaseLayer(currentConfigs[i]);
+            if (baseLayer) {
+              baseLayer.addTo(map);
             }
+
+            // Add Overlay Layers
+            sectorOverlays.forEach(ov => {
+              const overlayLayer = L.tileLayer(ov.url.trim(), {
+                minZoom: 0,
+                maxZoom: MAX_ZOOM,
+                maxNativeZoom: MAX_ZOOM,
+                attribution: ""
+              });
+              overlayLayer.addTo(map);
+            });
+
             activeMaps.push(map);
           } else {
             cell.className = "map-pane empty-pane";
@@ -867,11 +951,7 @@
       });
 
       clearStorageBtn.addEventListener("click", () => {
-        localStorage.removeItem(STORE_KEY_LAT);
-        localStorage.removeItem(STORE_KEY_LNG);
-        localStorage.removeItem(STORE_KEY_ZOOM);
-        localStorage.removeItem(STORE_KEY_CUSTOM_TILES);
-        localStorage.removeItem(STORE_KEY_CONFIGS);
+        localStorage.clear();
         window.location.href = window.location.pathname;
       });
 
