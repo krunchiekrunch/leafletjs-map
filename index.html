@@ -796,7 +796,7 @@
       const BingTileLayer = L.TileLayer.extend({
         getTileUrl(coords) {
           const quadkey = bingQuadKey(coords.x, coords.y, coords.z);
-          return `https://t.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/{quadkey}?it=A`;
+          return `https://t.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/${quadkey}?it=A`;
         }
       });
 
